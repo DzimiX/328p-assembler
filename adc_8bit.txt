@@ -1,0 +1,56 @@
+; przycisk + wyświetlenie wartości adc na 8 bitach
+
+.include "m328pdef.inc"
+.org 0x0000 rjmp reset
+.org 0x002A rjmp przerwanieADC
+
+reset:
+
+; inicjalizacja stosu
+ldi r16, high(RAMEND)
+out sph, r16
+ldi r16, low(RAMEND)
+out spl, r16
+
+
+ldi r16, 0b11111111
+out DDRD, r16		; PORTD jako wyjście (sterowanie diodami)
+
+ldi r16, 0b00000000
+out DDRC, r16 		; m.in. ADC4 jako wejście (potencjometr)
+
+ldi r16, 0b00000000
+out DDRB, r16		; m.in. PB4 jako wejście (przycisk)
+ldi r16, 0b00010000
+out PORTB, r16		; pull-up dla PB4
+
+ldi r16, 0b00100100
+sts ADMUX, r16		; napięcie odneisienia AREF, wyrównanie do lewej strony, mux ustawiony na adc4
+
+ldi r16, 0b10001111
+sts ADCSRA, r16		; włączenie ADC, manualna konwersja, przerwanie ADIE ustawione, prescaler na /128 (125 kHz)
+
+sei ; globalne włączenie przerwań
+
+main:
+	
+	sbis PINB, 4
+		rcall adc_konwersja	 ; jeżeli wciśnięty przycisk to rozpocznij konwersje
+
+	rjmp main
+
+adc_konwersja:
+
+	ldi r16, 0b11001111
+	sts ADCSRA, r16		; aktywacja konwersji
+
+	ret
+
+przerwanieADC:			; po zakończeniu konwersji
+	
+	lds r20, ADCL
+	lds r21, ADCH		; przepisz dane z buforów do rejestrów
+
+	out PORTD, r21		; zaktualizuj wyjście PORTD wartością r21 (ADCH)
+
+	reti

@@ -1,0 +1,306 @@
+; wyświetlenie liter na matrycy LED - MAX7219
+
+.include "m328pdef.inc"
+.org 0x0000 rjmp reset
+
+reset:
+
+; inicjalizacja stosu
+ldi r16, high(RAMEND)
+out sph, r16
+ldi r16, low(RAMEND)
+out spl, r16
+
+; cały DDRB jako wyjście (PB2 - CS dla LED, PB3 - MOSI, PB5 - SCK)
+ldi r16, 0b11111111
+out DDRB, r16
+
+; Włączenie SPI, tryb master, SCK = f_osc/2
+ldi r16, 0b01010000
+out SPCR,r16
+ldi r16, 0b00000001
+out SPSR, r16
+
+call inicjalizacja  ; konifguracja wyświetlacza
+call czysc 			; manualne czyszczenie każdego rejestru (zerowanie wyświetlacza)
+
+main:				; pusta pętla
+
+	call czysc
+
+	call led_M
+	call delay0s5
+	call led_A
+	call delay0s5
+
+	rjmp main
+
+nadawaj:
+	out SPDR, r16
+	czy_koniec_nadawania:
+		in r16, SPSR
+		sbrs r16, SPIF
+			rjmp czy_koniec_nadawania
+		ret
+
+delay0s5:			; pętla opóźniająca
+	ldi  r16, 41
+	ldi  r17, 150
+	ldi  r18, 128
+	delay0s5_0: 
+		dec  r18
+		brne delay0s5_0
+		dec  r17
+		brne delay0s5_0
+		dec  r16
+		brne delay0s5_0
+	ret
+
+inicjalizacja:
+
+	; Shutdown
+	cbi PORTB, 2
+	ldi r16, 0b00001100
+	call nadawaj
+	ldi r16, 0b00000000 	; na razie dla pewności 0
+	call nadawaj
+	sbi PORTB, 2
+	
+	; DecodeMode
+	cbi PORTB, 2
+	ldi r16, 0b00001001
+	call nadawaj
+	ldi r16, 0				; ręczne "rysowanie" po matrycy
+	call nadawaj
+	sbi PORTB, 2
+
+	; Intensity
+	cbi PORTB, 2
+	ldi r16, 0b00001010
+	call nadawaj
+	ldi r16, 0b00000000		; szkoda prądu
+	call nadawaj
+	sbi PORTB, 2
+
+	; Scan Limit
+	cbi PORTB, 2
+	ldi r16, 0b00001011
+	call nadawaj
+	ldi r16, 0b00000111		; pełne 8 segmentów
+	call nadawaj
+	sbi PORTB, 2
+
+	; DisplayTest
+	cbi PORTB, 2
+	ldi r16, 0b00001111
+	call nadawaj
+	ldi r16, 0b00000000		; bez testu
+	call nadawaj
+	sbi PORTB, 2
+
+	; Shutdown
+	cbi PORTB, 2
+	ldi r16, 0b00001100
+	call nadawaj
+	ldi r16, 0b00000001		; włączenie wyświetlacza
+	call nadawaj
+	sbi PORTB, 2
+
+	ret
+
+czysc: ; zeruje wszystkie rejestry danych
+
+	; Shutdown
+	cbi PORTB, 2
+	ldi r16, 0b00001100
+	call nadawaj
+	ldi r16, 0b00000000		; wyłącz
+	call nadawaj
+	sbi PORTB, 2
+	
+	cbi PORTB, 2
+	ldi r16, 0b00000001
+	call nadawaj
+	ldi r16, 0b00000000		; 0 na każdy bit każdego adresu wyświetlacza ...
+	call nadawaj
+	sbi PORTB, 2
+
+	cbi PORTB, 2
+	ldi r16, 0b00000010
+	call nadawaj
+	ldi r16, 0b00000000
+	call nadawaj
+	sbi PORTB, 2
+
+	cbi PORTB, 2
+	ldi r16, 0b00000011
+	call nadawaj
+	ldi r16, 0b00000000
+	call nadawaj
+	sbi PORTB, 2
+
+	cbi PORTB, 2
+	ldi r16, 0b00000100
+	call nadawaj
+	ldi r16, 0b00000000
+	call nadawaj
+	sbi PORTB, 2
+
+	cbi PORTB, 2
+	ldi r16, 0b00000101
+	call nadawaj
+	ldi r16, 0b00000000
+	call nadawaj
+	sbi PORTB, 2
+
+	cbi PORTB, 2
+	ldi r16, 0b00000110
+	call nadawaj
+	ldi r16, 0b00000000
+	call nadawaj
+	sbi PORTB, 2
+
+	cbi PORTB, 2
+	ldi r16, 0b00000111
+	call nadawaj
+	ldi r16, 0b00000000
+	call nadawaj
+	sbi PORTB, 2
+
+	cbi PORTB, 2
+	ldi r16, 0b00001000
+	call nadawaj
+	ldi r16, 0b00000000
+	call nadawaj
+	sbi PORTB, 2
+
+	; Shutdown
+	cbi PORTB, 2
+	ldi r16, 0b00001100
+	call nadawaj
+	ldi r16, 0b00000001		; włącz
+	call nadawaj
+	sbi PORTB, 2
+
+	ret
+
+led_M: ; wyświetli literę M
+	
+	cbi PORTB, 2
+	ldi r16, 0b00000001
+	call nadawaj
+	ldi r16, 0b11111111
+	call nadawaj
+	sbi PORTB, 2
+
+	cbi PORTB, 2
+	ldi r16, 0b00000010
+	call nadawaj
+	ldi r16, 0b11111111
+	call nadawaj
+	sbi PORTB, 2
+
+	cbi PORTB, 2
+	ldi r16, 0b00000011
+	call nadawaj
+	ldi r16, 0b00001110
+	call nadawaj
+	sbi PORTB, 2
+
+	cbi PORTB, 2
+	ldi r16, 0b00000100
+	call nadawaj
+	ldi r16, 0b00011100
+	call nadawaj
+	sbi PORTB, 2
+
+	cbi PORTB, 2
+	ldi r16, 0b00000101
+	call nadawaj
+	ldi r16, 0b00011100
+	call nadawaj
+	sbi PORTB, 2
+
+	cbi PORTB, 2
+	ldi r16, 0b00000110
+	call nadawaj
+	ldi r16, 0b00001110
+	call nadawaj
+	sbi PORTB, 2
+
+	cbi PORTB, 2
+	ldi r16, 0b00000111
+	call nadawaj
+	ldi r16, 0b11111111
+	call nadawaj
+	sbi PORTB, 2
+
+	cbi PORTB, 2
+	ldi r16, 0b00001000
+	call nadawaj
+	ldi r16, 0b11111111
+	call nadawaj
+	sbi PORTB, 2
+
+	ret
+
+led_A: ; wyświetli literę A
+	
+	cbi PORTB, 2
+	ldi r16, 0b00000001
+	call nadawaj
+	ldi r16, 0b11111111
+	call nadawaj
+	sbi PORTB, 2
+
+	cbi PORTB, 2
+	ldi r16, 0b00000010
+	call nadawaj
+	ldi r16, 0b11111111
+	call nadawaj
+	sbi PORTB, 2
+
+	cbi PORTB, 2
+	ldi r16, 0b00000011
+	call nadawaj
+	ldi r16, 0b00110011
+	call nadawaj
+	sbi PORTB, 2
+
+	cbi PORTB, 2
+	ldi r16, 0b00000100
+	call nadawaj
+	ldi r16, 0b00110011
+	call nadawaj
+	sbi PORTB, 2
+
+	cbi PORTB, 2
+	ldi r16, 0b00000101
+	call nadawaj
+	ldi r16, 0b00110011
+	call nadawaj
+	sbi PORTB, 2
+
+	cbi PORTB, 2
+	ldi r16, 0b00000110
+	call nadawaj
+	ldi r16, 0b00110011
+	call nadawaj
+	sbi PORTB, 2
+
+	cbi PORTB, 2
+	ldi r16, 0b00000111
+	call nadawaj
+	ldi r16, 0b11111111
+	call nadawaj
+	sbi PORTB, 2
+
+	cbi PORTB, 2
+	ldi r16, 0b00001000
+	call nadawaj
+	ldi r16, 0b11111111
+	call nadawaj
+	sbi PORTB, 2
+
+	ret
+

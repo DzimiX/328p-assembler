@@ -1,0 +1,59 @@
+; przesuwaj¹ca siê kropka na diodach
+
+.include "m328pdef.inc"
+
+.def kierunek = r16
+.def jed = r17
+.def zer = r18
+.def wyswietlacz = r19
+
+ldi r16, low(RAMEND)	; inicjalizacja stosu
+out spl, r16
+ldi r16, high(RAMEND)
+out sph, r16
+
+ldi kierunek, 0		; domyœlnie zaczniemy przesuwaæ w prawo
+ldi jed, 0b11111111
+ldi zer, 0b00000000
+
+out DDRD, jed		; konfiguracja i/o, kierunki wyjœciowe, pocz¹tkowa lokalizacja zaœwieconej diody
+ldi wyswietlacz, 8	; [8 = 0b0001000] - zaczynamy na œrodku i przesuwamy siê w prawo
+
+start:
+	out PORTD, wyswietlacz	; przepisz r19 na wyjœcia portuD
+	call czekaj0s2		; daj czas na zobaczenie zaœwieconej diody
+
+	sbrs kierunek, 0	; je¿eli bit 0 w r16 == 1
+		rcall prawo	; 	to idŸ do podprogramu prawo
+	sbrc kierunek, 0	; je¿eli bit 0 w r16 == 0
+		rcall lewo	; 	to id¿ do podprogramu lewo
+
+rjmp start		
+
+prawo:
+	sbrc wyswietlacz, 1		; je¿eli przedostatni bit od prawej == 1 to wykonaj nastêpn¹ instrukcje
+		ldi kierunek, 1		; 	ustaw kierunek, ¿eby nastêpnym razem w g³ównej pêtli przesuwaæ bit w lewo
+	ror wyswietlacz			; (w obecnej pêtli wci¹¿ wykona siê 1 operacja ror która przesunie nas na ostatni bit)
+rjmp start				; zamiast ret - je¿eli wpadliœmy do któregoœ z podprogramów przesuwania
+					; to nie musimy sprawdzaæ czy wpadniemy do drugiego => wracamy na pocz¹tek pêtli
+
+lewo:					; analogicznie jak wy¿ej, tylko warunki krañcowe i kierunek zamienione
+	sbrc wyswietlacz, 6		; je¿eli przedostatni bit od lewej == 1
+		ldi kierunek, 0		; 	to ustaw kierunek w prawo
+	rol wyswietlacz			; niezale¿nie przesuñ bit w lewo
+rjmp start	
+
+czekaj0s2:		; poczeka 0,2s (~1 600 000 cykli)
+	ldi r29, 241
+	c0s2_0:
+		    ldi r30, 25
+		    c0s2_1:
+		        ldi r31, 176
+		        c0s2_2:
+		        dec r31
+		        brne c0s2_2
+		    dec r30
+		    brne c0s2_1
+		dec r29
+		brne c0s2_0
+ret

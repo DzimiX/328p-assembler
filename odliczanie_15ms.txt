@@ -1,0 +1,59 @@
+; odliczanie 15 ms licznikiem T/C2
+
+; 328p taktowane jest 16MHz
+; przy preskalerze 1 jeden cykl dla licznika trwa 62,5 ns
+; aby odmierzyć 15 ms muszę odliczyć 240 000 impulsów przy preskalerze 1 - za dużo
+; przy preskalerze 1024 jeden cykl dla licznika trwa 640 us
+; aby odmierzyć 15 ms muszę odliczyć 234,375 impulsów przy preskalerze 1024
+
+.include "m328pdef.inc"
+.org 0x0000 rjmp reset
+.org 0x000E rjmp TIM2_COMPA
+
+reset:
+
+; inicjalizacja stosu
+ldi r16, high(RAMEND)
+out sph, r16
+ldi r16, low(RAMEND)
+out spl, r16
+
+; ustawienie rejestru TCCR2A:
+; 	1 na COM2A gdy rejestr równy z licznikiem
+; 	WGM21 - 1, WGM20 - 0 (tryb pracy CTC)
+ldi r16, 0b11000010
+sts TCCR2A, r16
+
+; ustawienie rejestru TCCR2B:
+; 	WGM22 - 0 (tryb pracy CTC)
+; 	prescaler równy 1024
+ldi r16, 0b00000111
+sts TCCR2B, r16
+
+ldi r16, 0b11101010 ; wpisuje do OCR2A wartość 234
+sts OCR2A, r16
+
+ldi r16, 0b00000010 ;maska przerwania dla porównania z OCR2A
+sts TIMSK2, r16
+
+sei ; globalne włączenie przerwań
+
+; portD jako wyjście
+ldi r16, 0b11111111
+out DDRD, r16
+ldi r16, 0b00000000
+out PORTD, r16
+
+clr r19
+
+main: ; pusta pętla
+	rjmp main
+
+
+
+TIM2_COMPA: ; przerwanie przy porównaniu licznika
+	
+	inc r19	; inkrementacja rejestru i wyprowadzenie na diody
+	out PORTD, r19
+	
+	reti

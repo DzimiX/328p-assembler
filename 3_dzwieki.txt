@@ -1,0 +1,101 @@
+; 3 ró¿ne dŸwiêki sterowane przyciskami
+
+.include "m328pdef.inc"
+
+.def on  = r25
+.def off = r26
+
+ldi r16, low(RAMEND)	; inicjalizacja stosu
+out spl, r16
+ldi r16, high(RAMEND)
+out sph, r16
+
+ldi on,  0b11111111
+ldi off, 0b00000000
+
+;konfiguracja I/O:
+ldi r16, 0b00000000
+out DDRC, r16		; ustawiam wejœcie na pinach A1, A2, A3 dla przycisków (PC1, PC2, PC3)
+ldi r16, 0b00001110
+out PORTC, r16		; ustawiam pullup na wejœciach przycisków
+
+out DDRD, on		; ustawiam wyjœcie na buzzerze
+out PORTD, on
+
+start:
+	sbis PINC, 1		; je¿eli wciœniêty przycisk "A1" (je¿eli == 1 to kontynuuj)
+		rcall A1	; 	to dŸwiêk "c" (261,6 Hz) [3.822 ms -> 2 odstêpy po 1.911 ms]
+	sbis PINC, 2		; je¿eli wciœniêty przycisk "A2"
+		rcall A2	; 	to dŸwiêk "f" (349,2 Hz) [2.864 ms -> 2 odstêpy po 1.432 ms]
+	sbis PINC, 3		; je¿eli wciœniêty przycisk "A3"
+		rcall A3	; 	to dŸwiêk "h" (493,9 Hz) [2.025 ms -> 2 odstêpy po 1.0125 ms]
+rjmp start
+
+A1:
+	out PORTD, off	; w³¹czenie buzzera
+	call A1_delay	; odczekanie 1/2 czasu dla dŸwiêku "c"
+	out PORTD, on	; wy³¹czenie buzzera
+	call A1_delay	; odczekanie 1/2 czasu dla dŸwiêku "c"
+ret
+
+A2:			; analogicznie jak wy¿ej
+	out PORTD, off
+	call A2_delay
+	out PORTD, on
+	call A2_delay
+ret
+
+A3:
+	out PORTD, off
+	call A3_delay
+	out PORTD, on
+	call A3_delay
+ret
+
+; delay na 1.911 ms [~30576 cykli]
+A1_delay:
+	ldi r18, 1
+	A1_delay_0:
+		ldi r19, 43
+		A1_delay_1:
+			ldi r20, 236
+			A1_delay_2:
+				dec r20
+				brne A1_delay_2
+			dec r19
+			brne A1_delay_1
+		dec r18
+		brne A1_delay_0
+	ret
+
+; delay na 1.432 ms [~22912 cykli]
+A2_delay:
+	ldi r18, 1
+	A2_delay_0:
+		ldi r19, 46
+		A2_delay_1:
+			ldi r20, 165
+			A2_delay_2:
+				dec r20
+				brne A2_delay_2
+			dec r19
+			brne A2_delay_1
+		dec r18
+		brne A2_delay_0
+	ret
+
+; delay na 1.0125 ms [~16200 cykli]
+A3_delay:
+	ldi r18, 4
+	A3_delay_0:
+		ldi r19, 19
+		A3_delay_1:
+			ldi r20, 70
+			A3_delay_2:
+				dec r20
+				brne A3_delay_2
+			dec r19
+			brne A3_delay_1
+		dec r18
+		brne A3_delay_0
+	ret

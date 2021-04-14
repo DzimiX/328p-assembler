@@ -1,0 +1,61 @@
+; mignięcie diodą przez przycisk wybraną ilość razy
+
+.include "m328pdef.inc"
+
+; inicjalizacja stosu
+ldi r16, high(RAMEND)
+out sph, r16
+ldi r16, low(RAMEND)
+out spl, r16
+
+; do realizacji wystarczą 3 wejścia i 1 wyjście, wykorzystam jedynie PORTB
+
+ldi r16, 0b00100000
+out DDRB, r16		; ustawiam wejścia i 1 wyjście dla PORTB, wykorzystuje wbudowaną diodę - PB5 jako wyjście
+ldi r16, 0b00000111
+out PORTB, r16		; ustawiam pull-up dla PB2, PB1, PB0
+
+; petla główna
+glowna:	
+	ldi r21, 0		; przezorny zawsze ubezpieczony - gdyby przycisk nie został wciśnięty i coś było by wpisane do r21 wcześniej
+	sbis PINB, 0	; jeżeli wciśnięty PB0
+		ldi r21, 2	;	to do r21 wpisz 2 (dioda zamiga 2 razy)
+	sbis PINB, 1	; jeżeli wciśnięty PB1
+		ldi r21, 3	; 	to do r21 wpisz 3 (dioda zamiga 3 razy)
+	sbis PINB, 2	; jeżeli wciśnięty PB2
+		ldi r21, 5	;	to do r21 wpisz 5 (dioda zamiga 5 razy)
+	
+	ldi r16, 0
+	cpse r21, r16	; porównaj r21 z r16 (0) jeżeli równe to pomiń następną instrukcje
+		rcall powtorz
+
+stop:
+	rjmp stop
+
+; pętla która zasadniczo wykona się tyle razy ile wybrano w pętli głównej
+powtorz:
+	p_1:
+		sbi PORTB, 5	; ustaw PB5 na "1" (zapal wbudowaną diodę)
+		rcall czekaj
+		cbi PORTB, 5	; ustaw PB5 na "0" (zgaś wbudowaną diodę)
+		rcall czekaj
+
+		dec r21
+		brne p_1
+	ret
+
+; klasyczna pętla na ~200ms
+czekaj:
+	ldi r29, 241
+	c_1:
+	    ldi r30, 25
+	    c_2:
+	        ldi r31, 176
+	        c_3:
+		        dec r31
+		        brne c_3
+	    	dec r30
+	   		brne c_2
+		dec r29
+		brne c_1
+	ret

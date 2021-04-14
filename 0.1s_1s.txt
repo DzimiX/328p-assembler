@@ -1,0 +1,52 @@
+; diody 0,1s œwiec¹, 1s nie œwiec¹
+
+.include "m328pdef.inc"
+.def jed = r17
+.def zer = r18
+
+ldi r16, low(RAMEND)	; inicjalizacja stosu
+out spl, r16
+ldi r16, high(RAMEND)
+out sph, r16
+
+ldi jed, 0b11111111		; wpisanie wartoœci do rejestrów
+ldi zer, 0b00000000
+
+out DDRB, jed			; ustawienie ca³ego portuB na wyjœcie
+
+start:
+	out PORTB, jed		; wypisanie na wszystkich portach PortuB "1" (m.in. dioda na PB5 œwieci)
+	call czekaj0s1		; odczekanie 100ms (widzimy ¿e dioda œwieci)
+	out PORTB, zer		; wypisanie na wszystkich portach PortuB "0" (m.in. dioda na PB5 nie œwieci)
+	call czekaj1s		; odczekanie 1s (widzimy ¿e dioda nie œwieci
+rjmp start
+
+czekaj0s1:		; poczeka ~0,1s (~1 600 000 cykli)
+	ldi r19, 241
+	c0s1_0:
+		ldi r20, 14
+	    c0s1_1:
+	        ldi r21, 157
+	        c0s1_2:
+		        dec r21
+		        brne c0s1_2
+			dec r20
+			brne c0s1_1
+		dec r19
+		brne c0s1_0
+	ret
+
+czekaj1s:		; poczeka ~1s (~16 000 000 cykli)
+	ldi r19, 144
+	c1s_0:
+	    ldi r20, 188
+	    c1s_1:
+	        ldi r21, 196
+	        c1s_2:
+		        dec r21
+		        brne c1s_2
+			dec r20
+			brne c1s_1
+		dec r19
+		brne c1s_0
+	ret

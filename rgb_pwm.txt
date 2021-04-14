@@ -1,0 +1,124 @@
+; sterowanie diodą RGB przez PWM
+
+; OC0A (PD6) - Red (r20)
+; OC0B (PD5) - Green (r21)
+; OC2B (PD3) - Blue (r22)
+
+.include "m328pdef.inc"
+.org 0x0000 rjmp reset
+
+.def red = r20
+.def green = r21
+.def blue = r22
+
+reset:
+
+; inicjalizacja stosu
+ldi r16, high(RAMEND)
+out sph, r16
+ldi r16, low(RAMEND)
+out spl, r16
+
+; tryb pracy FastPWM, OC0A i OC0B tryb pracy nieodwracający, preskaler 1
+ldi r16, 0b10100011
+out TCCR0A, r16
+ldi r16, 0b00000001
+out TCCR0B, r16
+
+; tryb pracy FastPWM, OC2B tryb pracy nieodwracający, preskaler 1
+ldi r16, 0b00100011
+sts TCCR2A, r16
+ldi r16, 0b00000001
+sts TCCR2B, r16
+
+; wyjście dla całego portD (OC0A, OC0B, OC2B)
+ldi r16, 0b11111111
+out DDRD, r16
+
+; dla pewności czyszczenie
+clr red
+clr green
+clr blue
+out OCR0A, red
+out OCR0B, green
+sts OCR2B, blue
+
+main:
+
+	; przejście przez całe "koło barw"
+	call narost_czerwony	; czerwony 		(255,   0,   0)
+	call narost_zielony		; żółty	   		(255, 255,   0)
+	call spadek_czerwony 	; zielony  		(  0, 255,   0)
+	call narost_niebieski	; cyan 	   		(  0, 255, 255)
+	call spadek_zielony		; niebieski 	(  0,   0, 255)
+	call narost_czerwony	; magenta  		(255,   0, 255)
+	call spadek_niebieski	; znów czerwony (255,   0,   0)
+
+	rjmp main
+
+czekaj: ; pętla z pierwszego laboratorium, rejestry dobrane subiektywnie
+	ldi r16, 10
+    cc:
+        ldi r17, 31
+        aa:
+            ldi r18, 171
+            bb:
+            dec r18
+            brne bb
+        dec r17
+        brne aa
+    dec r16
+    brne cc
+
+	ret
+
+narost_czerwony:
+	cpi red, 255		; jeżeli już jest maks czerwony
+	breq szybkikoniec	; to bezpośrednio kończymy - nie trzeba narastać (drugi i kolejne obiegi) [można by to zrobić ładniej, ale działa]
+	inc red				; jeżeli nie to większ rejestr
+	out OCR0A, red		; wyświetl zwiększoną wartość
+	call czekaj			; pokaż przez chwilę tę wartość
+	cpi red, 255			; jeżeli nie równe 255
+	brne narost_czerwony	; to znowu pętla
+	szybkikoniec:
+	ret					; jak równe 255 to skończ podprogram
+
+spadek_czerwony:		; analogicznie, tylko teraz od 255 do 0
+	dec red
+	out OCR0A, red
+	call czekaj
+	cpi red, 0
+	brne spadek_czerwony
+	ret
+
+narost_zielony:
+	inc green
+	out OCR0B, green
+	call czekaj
+	cpi green, 255
+	brne narost_zielony
+	ret
+
+spadek_zielony:
+	dec green
+	out OCR0B, green
+	call czekaj
+	cpi green, 0
+	brne spadek_zielony
+	ret
+
+narost_niebieski:
+	inc blue
+	sts OCR2B, blue
+	call czekaj
+	cpi blue, 255
+	brne narost_niebieski
+	ret
+
+spadek_niebieski:
+	dec blue
+	sts OCR2B, blue
+	call czekaj
+	cpi blue, 0
+	brne spadek_niebieski
+	ret

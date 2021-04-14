@@ -1,0 +1,43 @@
+; odczyt temperatury
+
+.include "m328pdef.inc"
+.org 0x0000 rjmp reset
+.org 0x002A rjmp przerwanieADC
+
+reset:
+
+; inicjalizacja stosu
+ldi r16, high(RAMEND)
+out sph, r16
+ldi r16, low(RAMEND)
+out spl, r16
+
+
+ldi r16, 0b11111111
+out DDRD, r16		; PORTD jako wyjście (sterowanie diodami)
+
+
+ldi r16, 0b11001000
+sts ADMUX, r16		; wewnętrzne napięcie odneisienia 1,1V; mux ustawiony na adc8
+
+ldi r16, 0b10001111
+sts ADCSRA, r16		; włączenie ADC, manualna konwersja, przerwanie ADIE ustawione, prescaler na /128 (125 kHz)
+
+sei ; globalne włączenie przerwań
+
+main:
+	; równie dobrze można użyć automatycznego trybu free runing
+	ldi r16, 0b11001111
+	sts ADCSRA, r16
+
+	rjmp main
+
+
+przerwanieADC:			; po zakończeniu konwersji
+	
+	lds r20, ADCL
+	lds r21, ADCH		; przepisz dane z buforów do rejestrów
+
+	out PORTD, r20		; zaktualizuj wyjście PORTD wartością r20 (ADCL)
+
+	reti

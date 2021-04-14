@@ -1,0 +1,831 @@
+; Woltomierz z multiplekserem dla 2 wyœwietlaczy 7 segmentowych
+
+; Timer 2,CTC, 50% wype³nienia dla równej pracy 2 tranzystorów (npn i pnp) steruj¹cych w³¹czeniem wyœwietlaczy
+; portD jako po³¹czone wyjœcie dla wyœwietlaczy 8 segmentowych
+; ADC0 jako wejœcie woltomierza
+
+.include "m328pdef.inc"
+.org 0x0000 rjmp reset
+.org 0x000E rjmp TIM2_COMPA
+.org 0x002A rjmp ADC_COMP
+
+.def pierwsza_cyfra = r23
+.def druga_cyfra = r24
+.def wyswietlacz = r25
+
+reset:
+
+; inicjalizacja stosu
+ldi r16, high(RAMEND)
+out sph, r16
+ldi r16, low(RAMEND)
+out spl, r16
+
+; ustawienie rejestru TCCR2A:
+; 	zmiana (toggle) OC2A gdy rejestr OCR2A równy z licznikiem
+; 	WGM21 - 1, WGM20 - 0 (tryb pracy CTC)
+ldi r16, 0b01000010
+sts TCCR2A, r16
+; ustawienie rejestru TCCR2B:
+; 	WGM22 - 0 (tryb pracy CTC)
+; 	prescaler równy 1024
+ldi r16, 0b00000111
+sts TCCR2B, r16
+; wpisuje do OCR2A wartoœæ 128 (f = ~60 Hz)
+ldi r16, 0b10000000
+sts OCR2A, r16
+; wyjœcie dla PB2 (OC2A)
+ldi r16, 0b11111111
+out DDRB, r16
+; przerwanie przy zmianie stanu
+ldi r16, 0b00000010
+sts TIMSK2, r16
+; wyjœcie dla 7 segmentowych
+ldi r16, 0b11111111
+out DDRD, r16
+
+
+; m.in. ADC0 jako wejœcie (potencjometr) woltomierza
+ldi r16, 0b00000000
+out DDRC, r16 	
+; napiêcie odniesienia AREF, wyrównanie do lewej strony, mux ustawiony na adc0
+ldi r16, 0b00100000
+sts ADMUX, r16		
+; w³¹czenie ADC, w³¹czenie konwersji, automatyczna konwersja, przerwanie ADIE ustawione, prescaler na /128 (125 kHz)
+ldi r16, 0b11101111
+sts ADCSRA, r16		
+
+
+ldi r17, 0b00000000
+ldi pierwsza_cyfra, 0
+ldi druga_cyfra, 0
+
+sei
+
+main:
+	rjmp main
+
+; patent z rjmp jako obejœcie ograniczeñ odleg³oœci skoku call i rcall
+
+ADC_COMP:
+	lds r20, ADCL
+	lds r21, ADCH
+
+	ldi r16, 250
+	cp r21, r16
+	brsh skok_50
+	rjmp nie_50
+	skok_50:
+	rjmp stan_50
+	nie_50:
+
+	ldi r16, 245
+	cp r21, r16
+	brsh skok_49
+	rjmp nie_49
+	skok_49:
+	rjmp stan_49
+	nie_49:
+
+	ldi r16, 240
+	cp r21, r16
+	brsh skok_48
+	rjmp nie_48
+	skok_48:
+	rjmp stan_48
+	nie_48:
+
+	ldi r16, 235
+	cp r21, r16
+	brsh skok_47
+	rjmp nie_47
+	skok_47:
+	rjmp stan_47
+	nie_47:
+
+	ldi r16, 230
+	cp r21, r16
+	brsh skok_46
+	rjmp nie_46
+	skok_46:
+	rjmp stan_46
+	nie_46:
+
+	ldi r16, 225
+	cp r21, r16
+	brsh skok_45
+	rjmp nie_45
+	skok_45:
+	rjmp stan_45
+	nie_45:
+
+	ldi r16, 220
+	cp r21, r16
+	brsh skok_44
+	rjmp nie_44
+	skok_44:
+	rjmp stan_44
+	nie_44:
+
+	ldi r16, 215
+	cp r21, r16
+	brsh skok_43
+	rjmp nie_43
+	skok_43:
+	rjmp stan_43
+	nie_43:
+
+	ldi r16, 210
+	cp r21, r16
+	brsh skok_42
+	rjmp nie_42
+	skok_42:
+	rjmp stan_42
+	nie_42:
+
+	ldi r16, 205
+	cp r21, r16
+	brsh skok_41
+	rjmp nie_41
+	skok_41:
+	rjmp stan_41
+	nie_41:
+
+	ldi r16, 200
+	cp r21, r16
+	brsh skok_40
+	rjmp nie_40
+	skok_40:
+	rjmp stan_40
+	nie_40:
+
+	ldi r16, 195
+	cp r21, r16
+	brsh skok_39
+	rjmp nie_39
+	skok_39:
+	rjmp stan_39
+	nie_39:
+
+	ldi r16, 190
+	cp r21, r16
+	brsh skok_38
+	rjmp nie_38
+	skok_38:
+	rjmp stan_38
+	nie_38:
+
+	ldi r16, 185
+	cp r21, r16
+	brsh skok_37
+	rjmp nie_37
+	skok_37:
+	rjmp stan_37
+	nie_37:
+
+	ldi r16, 180
+	cp r21, r16
+	brsh skok_36
+	rjmp nie_36
+	skok_36:
+	rjmp stan_36
+	nie_36:
+
+	ldi r16, 175
+	cp r21, r16
+	brsh skok_35
+	rjmp nie_35
+	skok_35:
+	rjmp stan_35
+	nie_35:
+
+	ldi r16, 170
+	cp r21, r16
+	brsh skok_34
+	rjmp nie_34
+	skok_34:
+	rjmp stan_34
+	nie_34:
+
+	ldi r16, 165
+	cp r21, r16
+	brsh skok_33
+	rjmp nie_33
+	skok_33:
+	rjmp stan_33
+	nie_33:
+
+	ldi r16, 160
+	cp r21, r16
+	brsh skok_32
+	rjmp nie_32
+	skok_32:
+	rjmp stan_32
+	nie_32:
+
+	ldi r16, 155
+	cp r21, r16
+	brsh skok_31
+	rjmp nie_31
+	skok_31:
+	rjmp stan_31
+	nie_31:
+
+	ldi r16, 150
+	cp r21, r16
+	brsh skok_30
+	rjmp nie_30
+	skok_30:
+	rjmp stan_30
+	nie_30:
+
+	ldi r16, 145
+	cp r21, r16
+	brsh skok_29
+	rjmp nie_29
+	skok_29:
+	rjmp stan_29
+	nie_29:
+
+	ldi r16, 140
+	cp r21, r16
+	brsh skok_28
+	rjmp nie_28
+	skok_28:
+	rjmp stan_28
+	nie_28:
+
+	ldi r16, 135
+	cp r21, r16
+	brsh skok_27
+	rjmp nie_27
+	skok_27:
+	rjmp stan_27
+	nie_27:
+
+	ldi r16, 130
+	cp r21, r16
+	brsh skok_26
+	rjmp nie_26
+	skok_26:
+	rjmp stan_26
+	nie_26:
+
+	ldi r16, 125
+	cp r21, r16
+	brsh skok_25
+	rjmp nie_25
+	skok_25:
+	rjmp stan_25
+	nie_25:
+
+	ldi r16, 120
+	cp r21, r16
+	brsh skok_24
+	rjmp nie_24
+	skok_24:
+	rjmp stan_24
+	nie_24:
+
+	ldi r16, 115
+	cp r21, r16
+	brsh skok_23
+	rjmp nie_23
+	skok_23:
+	rjmp stan_23
+	nie_23:
+
+	ldi r16, 110
+	cp r21, r16
+	brsh skok_22
+	rjmp nie_22
+	skok_22:
+	rjmp stan_22
+	nie_22:
+
+	ldi r16, 105
+	cp r21, r16
+	brsh skok_21
+	rjmp nie_21
+	skok_21:
+	rjmp stan_21
+	nie_21:
+
+	ldi r16, 100
+	cp r21, r16
+	brsh skok_20
+	rjmp nie_20
+	skok_20:
+	rjmp stan_20
+	nie_20:
+
+	ldi r16, 95
+	cp r21, r16
+	brsh skok_19
+	rjmp nie_19
+	skok_19:
+	rjmp stan_19
+	nie_19:
+
+	ldi r16, 90
+	cp r21, r16
+	brsh skok_18
+	rjmp nie_18
+	skok_18:
+	rjmp stan_18
+	nie_18:
+
+	ldi r16, 85
+	cp r21, r16
+	brsh skok_17
+	rjmp nie_17
+	skok_17:
+	rjmp stan_17
+	nie_17:
+
+	ldi r16, 80
+	cp r21, r16
+	brsh skok_16
+	rjmp nie_16
+	skok_16:
+	rjmp stan_16
+	nie_16:
+
+	ldi r16, 75
+	cp r21, r16
+	brsh skok_15
+	rjmp nie_15
+	skok_15:
+	rjmp stan_15
+	nie_15:
+
+	ldi r16, 70
+	cp r21, r16
+	brsh skok_14
+	rjmp nie_14
+	skok_14:
+	rjmp stan_14
+	nie_14:
+
+	ldi r16, 65
+	cp r21, r16
+	brsh skok_13
+	rjmp nie_13
+	skok_13:
+	rjmp stan_13
+	nie_13:
+
+	ldi r16, 60
+	cp r21, r16
+	brsh skok_12
+	rjmp nie_12
+	skok_12:
+	rjmp stan_12
+	nie_12:
+
+	ldi r16, 55
+	cp r21, r16
+	brsh skok_11
+	rjmp nie_11
+	skok_11:
+	rjmp stan_11
+	nie_11:
+
+	ldi r16, 50
+	cp r21, r16
+	brsh skok_10
+	rjmp nie_10
+	skok_10:
+	rjmp stan_10
+	nie_10:
+
+	ldi r16, 45
+	cp r21, r16
+	brsh skok_9
+	rjmp nie_9
+	skok_9:
+	rjmp stan_9
+	nie_9:
+
+	ldi r16, 40
+	cp r21, r16
+	brsh skok_8
+	rjmp nie_8
+	skok_8:
+	rjmp stan_8
+	nie_8:
+
+	ldi r16, 35
+	cp r21, r16
+	brsh skok_7
+	rjmp nie_7
+	skok_7:
+	rjmp stan_7
+	nie_7:
+
+	ldi r16, 30
+	cp r21, r16
+	brsh skok_6
+	rjmp nie_6
+	skok_6:
+	rjmp stan_6
+	nie_6:
+
+	ldi r16, 25
+	cp r21, r16
+	brsh skok_5
+	rjmp nie_5
+	skok_5:
+	rjmp stan_5
+	nie_5:
+
+	ldi r16, 20
+	cp r21, r16
+	brsh skok_4
+	rjmp nie_4
+	skok_4:
+	rjmp stan_4
+	nie_4:
+
+	ldi r16, 15
+	cp r21, r16
+	brsh skok_3
+	rjmp nie_3
+	skok_3:
+	rjmp stan_3
+	nie_3:
+
+	ldi r16, 10
+	cp r21, r16
+	brsh skok_2
+	rjmp nie_2
+	skok_2:
+	rjmp stan_2
+	nie_2:
+
+	ldi r16, 5
+	cp r21, r16
+	brsh skok_1
+	rjmp nie_1
+	skok_1:
+	rjmp stan_1
+	nie_1:
+
+	rjmp stan_0
+
+; wszystkie stany woltomierza od 0.0V do 5.0V (wypisanie na cyfrach)
+stan_50:
+	ldi pierwsza_cyfra, 5
+	ldi druga_cyfra, 0
+	reti
+stan_49:
+	ldi pierwsza_cyfra, 4
+	ldi druga_cyfra, 9
+	reti
+stan_48:
+	ldi pierwsza_cyfra, 4
+	ldi druga_cyfra, 8
+	reti
+stan_47:
+	ldi pierwsza_cyfra, 4
+	ldi druga_cyfra, 7
+	reti
+stan_46:
+	ldi pierwsza_cyfra, 4
+	ldi druga_cyfra, 6
+	reti
+stan_45:
+	ldi pierwsza_cyfra, 4
+	ldi druga_cyfra, 5
+	reti
+stan_44:
+	ldi pierwsza_cyfra, 4
+	ldi druga_cyfra, 4
+	reti
+stan_43:
+	ldi pierwsza_cyfra, 4
+	ldi druga_cyfra, 3
+	reti
+stan_42:
+	ldi pierwsza_cyfra, 4
+	ldi druga_cyfra, 2
+	reti
+stan_41:
+	ldi pierwsza_cyfra, 4
+	ldi druga_cyfra, 1
+	reti
+stan_40:
+	ldi pierwsza_cyfra, 4
+	ldi druga_cyfra, 0
+	reti
+stan_39:
+	ldi pierwsza_cyfra, 3
+	ldi druga_cyfra, 9
+	reti
+stan_38:
+	ldi pierwsza_cyfra, 3
+	ldi druga_cyfra, 8
+	reti
+stan_37:
+	ldi pierwsza_cyfra, 3
+	ldi druga_cyfra, 7
+	reti
+stan_36:
+	ldi pierwsza_cyfra, 3
+	ldi druga_cyfra, 6
+	reti
+stan_35:
+	ldi pierwsza_cyfra, 3
+	ldi druga_cyfra, 5
+	reti
+stan_34:
+	ldi pierwsza_cyfra, 3
+	ldi druga_cyfra, 4
+	reti
+stan_33:
+	ldi pierwsza_cyfra, 3
+	ldi druga_cyfra, 3
+	reti
+stan_32:
+	ldi pierwsza_cyfra, 3
+	ldi druga_cyfra, 2
+	reti
+stan_31:
+	ldi pierwsza_cyfra, 3
+	ldi druga_cyfra, 1
+	reti
+stan_30:
+	ldi pierwsza_cyfra, 3
+	ldi druga_cyfra, 0
+	reti
+stan_29:
+	ldi pierwsza_cyfra, 2
+	ldi druga_cyfra, 9
+	reti
+stan_28:
+	ldi pierwsza_cyfra, 2
+	ldi druga_cyfra, 8
+	reti
+stan_27:
+	ldi pierwsza_cyfra, 2
+	ldi druga_cyfra, 7
+	reti
+stan_26:
+	ldi pierwsza_cyfra, 2
+	ldi druga_cyfra, 6
+	reti
+stan_25:
+	ldi pierwsza_cyfra, 2
+	ldi druga_cyfra, 5
+	reti
+stan_24:
+	ldi pierwsza_cyfra, 2
+	ldi druga_cyfra, 4
+	reti
+stan_23:
+	ldi pierwsza_cyfra, 2
+	ldi druga_cyfra, 3
+	reti
+stan_22:
+	ldi pierwsza_cyfra, 2
+	ldi druga_cyfra, 2
+	reti
+stan_21:
+	ldi pierwsza_cyfra, 2
+	ldi druga_cyfra, 1
+	reti
+stan_20:
+	ldi pierwsza_cyfra, 2
+	ldi druga_cyfra, 0
+	reti
+stan_19:
+	ldi pierwsza_cyfra, 1
+	ldi druga_cyfra, 9
+	reti
+stan_18:
+	ldi pierwsza_cyfra, 1
+	ldi druga_cyfra, 8
+	reti
+stan_17:
+	ldi pierwsza_cyfra, 1
+	ldi druga_cyfra, 7
+	reti
+stan_16:
+	ldi pierwsza_cyfra, 1
+	ldi druga_cyfra, 6
+	reti
+stan_15:
+	ldi pierwsza_cyfra, 1
+	ldi druga_cyfra, 5
+	reti
+stan_14:
+	ldi pierwsza_cyfra, 1
+	ldi druga_cyfra, 4
+	reti
+stan_13:
+	ldi pierwsza_cyfra, 1
+	ldi druga_cyfra, 3
+	reti
+stan_12:
+	ldi pierwsza_cyfra, 1
+	ldi druga_cyfra, 2
+	reti
+stan_11:
+	ldi pierwsza_cyfra, 1
+	ldi druga_cyfra, 1
+	reti
+stan_10:
+	ldi pierwsza_cyfra, 1
+	ldi druga_cyfra, 0
+	reti
+stan_9:
+	ldi pierwsza_cyfra, 0
+	ldi druga_cyfra, 9
+	reti
+stan_8:
+	ldi pierwsza_cyfra, 0
+	ldi druga_cyfra, 8
+	reti
+stan_7:
+	ldi pierwsza_cyfra, 0
+	ldi druga_cyfra, 7
+	reti
+stan_6:
+	ldi pierwsza_cyfra, 0
+	ldi druga_cyfra, 6
+	reti
+stan_5:
+	ldi pierwsza_cyfra, 0
+	ldi druga_cyfra, 5
+	reti
+stan_4:
+	ldi pierwsza_cyfra, 0
+	ldi druga_cyfra, 4
+	reti
+stan_3:
+	ldi pierwsza_cyfra, 0
+	ldi druga_cyfra, 3
+	reti
+stan_2:
+	ldi pierwsza_cyfra, 0
+	ldi druga_cyfra, 2
+	reti
+stan_1:
+	ldi pierwsza_cyfra, 0
+	ldi druga_cyfra, 1
+	reti
+stan_0:
+	ldi pierwsza_cyfra, 0
+	ldi druga_cyfra, 0
+	reti
+
+TIM2_COMPA:
+
+	inc r17
+	ldi r18, 0b00000001
+	and r17, r18
+	cp r17, r18
+	breq cyfra_prawa ; raz wyœwietlanie 1 cyfry, raz drugiej w zale¿noœci czy ostatania cyfra = 0 czy = 1
+	rjmp cyfra_lewa
+
+cyfra_lewa: ; wyœwietlenie cyfry na lewym wyœwietlaczu w zale¿noœci od rejestru "pierwsza_cyfra" [0-5]
+
+	ldi r16, 0
+	cp pierwsza_cyfra, r16
+	brlo do_1_lewa
+	rcall cyfra_0
+	do_1_lewa:
+
+	ldi r16, 1
+	cp pierwsza_cyfra, r16
+	brlo do_2_lewa
+	rcall cyfra_1
+	do_2_lewa:
+
+	ldi r16, 2
+	cp pierwsza_cyfra, r16
+	brlo do_3_lewa
+	rcall cyfra_2
+	do_3_lewa:
+
+	ldi r16, 3
+	cp pierwsza_cyfra, r16
+	brlo do_4_lewa
+	rcall cyfra_3
+	do_4_lewa:
+
+	ldi r16, 4
+	cp pierwsza_cyfra, r16
+	brlo do_5_lewa
+	rcall cyfra_4
+	do_5_lewa:
+
+	ldi r16, 5
+	cp pierwsza_cyfra, r16
+	brlo max_lewa
+	rcall cyfra_5
+	max_lewa:
+
+	ldi r16, 0b10000000
+	or wyswietlacz, r16  ; ustawienie kropki niezale¿nie od pozosta³ych bitów
+	out DDRD,wyswietlacz
+
+	reti
+
+cyfra_prawa: ; wyœwietlenie cyfry na prawym wyœwietlaczu w zale¿noœci od rejestru "druga_cyfra" [0-9]
+	
+	ldi r16, 0
+	cp druga_cyfra, r16
+	brlo do_1_prawa
+	rcall cyfra_0
+	do_1_prawa:
+
+	ldi r16, 1
+	cp druga_cyfra, r16
+	brlo do_2_prawa
+	rcall cyfra_1
+	do_2_prawa:
+
+	ldi r16, 2
+	cp druga_cyfra, r16
+	brlo do_3_prawa
+	rcall cyfra_2
+	do_3_prawa:
+
+	ldi r16, 3
+	cp druga_cyfra, r16
+	brlo do_4_prawa
+	rcall cyfra_3
+	do_4_prawa:
+
+	ldi r16, 4
+	cp druga_cyfra, r16
+	brlo do_5_prawa
+	rcall cyfra_4
+	do_5_prawa:
+
+	ldi r16, 5
+	cp druga_cyfra, r16
+	brlo do_6_prawa
+	rcall cyfra_5
+	do_6_prawa:
+
+	ldi r16, 6
+	cp druga_cyfra, r16
+	brlo do_7_prawa
+	rcall cyfra_6
+	do_7_prawa:
+
+	ldi r16, 7
+	cp druga_cyfra, r16
+	brlo do_8_prawa
+	rcall cyfra_7
+	do_8_prawa:
+
+	ldi r16, 8
+	cp druga_cyfra, r16
+	brlo do_9_prawa
+	rcall cyfra_8
+	do_9_prawa:
+
+	ldi r16, 9
+	cp druga_cyfra, r16
+	brlo max_prawa
+	rcall cyfra_9
+	max_prawa:
+
+	out DDRD,wyswietlacz
+
+	reti
+
+; https://pl.wikipedia.org/wiki/Wyœwietlacz_siedmiosegmentowy
+cyfra_0:
+	ldi wyswietlacz, 0x3F
+	ret
+cyfra_1:
+	ldi wyswietlacz, 0x06
+	ret
+cyfra_2:
+	ldi wyswietlacz, 0x5B
+	ret
+cyfra_3:
+	ldi wyswietlacz, 0x4F
+	ret
+cyfra_4:
+	ldi wyswietlacz, 0x66
+	ret
+cyfra_5:
+	ldi wyswietlacz, 0x6D
+	ret
+cyfra_6:
+	ldi wyswietlacz, 0x7D
+	ret
+cyfra_7:
+	ldi wyswietlacz, 0x07
+	ret
+cyfra_8:
+	ldi wyswietlacz, 0x7F
+	ret
+cyfra_9:
+	ldi wyswietlacz, 0x6F
+	ret

@@ -1,0 +1,105 @@
+; T/C0 odliczanie do 15 w trybie CTC
+
+.include "m328pdef.inc"
+.org 0x0000 rjmp reset
+.org 0x001C rjmp TIM0_COMPA
+
+reset:
+
+; inicjalizacja stosu
+ldi r16, high(RAMEND)
+out sph, r16
+ldi r16, low(RAMEND)
+out spl, r16
+
+
+; ustawienie rejestru TCCR0A:
+;	 1 na OC0A gdy równe z licznikiem, 
+;	 WGM01 - 1, WGM00 - 0 (tryb pracy CTC)
+ldi r16, 0b11000010
+out TCCR0A, r16
+
+; ustawienie rejestru TCCR0B m.in:
+;	WGM02 - 0 (tryb pracy CTC)
+; 	Zewnętrzny zegar w postaci pinu T0 (zbocze opadające)
+ldi r16, 0b00000110
+out TCCR0B, r16
+
+; ustawienie OCR0A na 14 - wartość graniczna odliczania
+ldi r16, 0b00001110
+out OCR0A, r16
+
+; włączenie przerwania gdy porównujemy licznik OCR0A
+ldi r16, 0b00000010
+sts TIMSK0, r16
+
+sei
+
+; portB jako wyjście dla stanu licznika
+ldi r16, 0b11111111
+out DDRB, r16
+ldi r16, 0b00000000
+out PORTB, r16
+
+; m.in. PD4 jako wejście z pull-up (wejście tla T0)
+ldi r16, 0b00000000
+out DDRD, r16
+ldi r16, 0b11111111
+out PORTD, r16
+
+; PC0 jako wyjście dla diody sygnalizującej znajdowanie się w przerwaniu
+ldi r16, 0b00000001
+out DDRC, r16
+ldi r16, 0b00000000
+out PORTC, r16
+
+main:
+	in r16, TCNT0
+	out PORTB, r16	; przepisanie aktualnego stanu licznika na diody
+
+	rjmp main;
+
+TIM0_COMPA:
+	; tryb CTC powoduje wyzerowanie licznika przez co aktualna wartość wynosi 0
+	; pomimo tego podprogram odpala się gdy dolicza do 15
+	; w celu zwiększenia ilośći można zwiększyć wartość OCR0A
+
+	ldi r16, 0b00000000
+	out TCCR0B, r16
+
+	; wyświetlenie ostatniej wartości licznika (na której jest przerwanie)
+	in r16, TCNT0
+	out PORTB, r16
+	
+	; zaświecenie kontrolnej diody od przerwania
+	ldi r16, 0b00000001
+	out PORTC, r16
+
+	call czekaj
+
+	; zgaszenie kontrolnej diody od przerwania
+	ldi r16, 0b00000000
+	out PORTC, r16
+
+	; włączam ponownie zliczanie
+	ldi r16, 0b00000110
+	out TCCR0B, r16
+
+	reti
+
+
+; pętla opóźniająca
+czekaj:
+	ldi r29, 150
+	c_1:
+	    ldi r30, 255
+	    c_2:
+	        ldi r31, 255
+	        c_3:
+		        dec r31
+		        brne c_3
+	    	dec r30
+	   		brne c_2
+		dec r29
+		brne c_1
+	ret

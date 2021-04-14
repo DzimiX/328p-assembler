@@ -1,0 +1,70 @@
+; wyświetlenie cyfr na wyświetlaczu 7 segmentowym
+
+.include "m328pdef.inc"
+
+; inicjalizacja stosu
+ldi r16, high(RAMEND)
+out sph, r16
+ldi r16, low(RAMEND)
+out spl, r16
+
+; do realizacji wystarczy 8 wyjść
+
+ldi r16, 0b11111111
+out DDRD, r16		; ustawiam wyjścia na PORTD
+
+; petla główna
+glowna:	
+	
+	call wypisz_4
+	call wypisz_5
+	call wypisz_6
+
+	; odczekuje 3 sekudndy nie wyświetlając nic i zapętlam indeks
+	call wypisz_puste
+	call czekaj
+	call czekaj
+
+rjmp glowna
+
+; pętla na 1s
+czekaj:
+	ldi r29, 144
+	c_1:
+	    ldi r30, 188
+	    c_2:
+	        ldi r31, 196
+	        c_3:
+		        dec r31
+		        brne c_3
+	    	dec r30
+	   		brne c_2
+		dec r29
+		brne c_1
+	ret
+
+; podprogramy dla czytelności
+
+wypisz_4:
+	ldi r16,0b10011001
+	out PORTD,r16
+	call czekaj
+ret
+
+wypisz_5:
+	ldi r16,0b01001001
+	out PORTD,r16
+	call czekaj
+ret
+
+wypisz_6:
+	ldi r16,0b01000001
+	out PORTD,r16
+	call czekaj
+ret
+
+wypisz_puste:
+	ldi r16,0b11111111
+	out PORTD,r16
+	call czekaj
+ret

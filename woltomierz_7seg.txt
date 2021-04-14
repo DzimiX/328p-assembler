@@ -1,0 +1,101 @@
+; woltomierz na wyświetlaczu 7 segmentowym
+
+.include "m328pdef.inc"
+.org 0x0000 rjmp reset
+.org 0x002A rjmp przerwanieADC
+
+reset:
+
+; inicjalizacja stosu
+ldi r16, high(RAMEND)
+out sph, r16
+ldi r16, low(RAMEND)
+out spl, r16
+
+
+ldi r16, 0b11111111
+out DDRD, r16		; PORTD jako wyjście (sterowanie diodami)
+
+ldi r16, 0b00000000
+out DDRC, r16 		; m.in. ADC4 jako wejście (potencjometr)
+
+ldi r16, 0b00100100
+sts ADMUX, r16		; napięcie odniesienia AREF, wyrównanie do lewej strony, mux ustawiony na adc4
+
+ldi r16, 0b11101111
+sts ADCSRA, r16		; włączenie ADC, włączenie konwersji, automatyczna konwersja, przerwanie ADIE ustawione, prescaler na /128 (125 kHz)
+
+					; ADCSRB domyślnie wyzerowany - tryb free running
+
+sei ; globalne włączenie przerwań
+
+main:				; gdyby teoretycznie konwersja nie odbyła się automatycznie to niech kontroler pozostanie zawieszony
+	rjmp main
+
+przerwanieADC:		; po zakończeniu konwersji
+	
+	lds r20, ADCL
+	lds r21, ADCH	; przepisz dane z buforów do rejestrów
+
+	;
+	; napięcie odniesienia może pływać zależnie od obciążenia dołączonego do wyjść (diody)
+	; pomiary z woltomierza nie są reprezentatywne - nie wiemy w jakim stopniu spada napięcie
+	; możemy tylko stwierdzić jak bardzo zbliżone jest napięcie wejściowe na adc w stosunku do referencyjnego
+	;
+	; 256 / 5 ~ 51,2 ~ 51
+	;
+
+	ldi r16, 255
+	cp r21, r16
+	brsh v_5v 		; jeżeli wartość w ADCH większa równa 255 to wyświetl 5 (i skończ przerwanie w podprogramie)
+					; jeżeli nie to idź dalej
+	
+	ldi r16, 204
+	cp r21, r16
+	brsh v_4v		; jeżeli wartość w ADCH większa równa 204 to wyświetl 4 (i skończ przerwanie w podprogramie)
+					; jeżeli nie to idź dalej
+	
+	ldi r16, 153
+	cp r21, r16
+	brsh v_3v		; jeżeli wartość w ADCH większa równa 153 to wyświetl 3 (i skończ przerwanie w podprogramie)
+					; jeżeli nie to idź dalej
+	
+	ldi r16, 102
+	cp r21, r16
+	brsh v_2v		; jeżeli wartość w ADCH większa równa 102 to wyświetl 2 (i skończ przerwanie w podprogramie)
+					; jeżeli nie to idź dalej
+	
+	ldi r16, 51
+	cp r21, r16
+	brsh v_1v		; jeżeli wartość w ADCH większa równa 51 to wyświetl 1 (i skończ przerwanie w podprogramie)
+					; jeżeli nie to idź dalej
+						
+	; jeżeli żaden powyższy warunek nie spełniony (nie zakończył przerwania) to wartość jest między 0 a 1, wyświetl 0 i zakończ przerwanie
+	ldi r16, 0b00000011
+	out PORTD, r16		
+	reti
+
+v_1v:
+	ldi r19, 0b10011111
+	out PORTD, r19
+	reti
+
+v_2v:
+	ldi r19, 0b00100101
+	out PORTD, r19
+	reti
+
+v_3v:
+	ldi r19, 0b00001101
+	out PORTD, r19
+	reti
+
+v_4v:
+	ldi r19, 0b10011001
+	out PORTD, r19
+	reti
+
+v_5v:
+	ldi r19, 0b01001001
+	out PORTD, r19
+	reti

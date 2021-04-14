@@ -1,0 +1,59 @@
+; odliczanie 1 s licznikiem T/C1
+
+; 328p taktowane jest 16MHz
+; aby odmierzyć 1s muszę odliczyć 16 000 000 impulsów przy preskalerze 1
+; aby odmierzyć 1s muszę odliczyć 62 500 impulsów przy preskalerze 256
+
+.include "m328pdef.inc"
+.org 0x0000 rjmp reset
+.org 0x0016 rjmp TIM1_COMPA
+
+reset:
+
+; inicjalizacja stosu
+ldi r16, high(RAMEND)
+out sph, r16
+ldi r16, low(RAMEND)
+out spl, r16
+
+; ustawienie rejestru TCCR1A:
+; 	1 na OC0A gdy rejestr równy z licznikiem
+; 	WGM11 - 0, WGM10 - 0 (tryb pracy CTC)
+ldi r16, 0b11000000
+sts TCCR1A, r16
+
+; ustawienie rejestru TCCR1B:
+; 	WGM13 - 0, WGM12 - 1 (tryb pracy CTC)
+; 	prescaler równy 256
+ldi r16, 0b00001100
+sts TCCR1B, r16
+
+ldi r16, 0b11110100 ; wpisuje do OCR1A wartość 62500
+sts OCR1AH, r16
+ldi r16, 0b00100100
+sts OCR1AL, r16
+
+ldi r16, 0b00000010 ;maska przerwania dla porównania z OCR1A
+sts TIMSK1, r16
+
+sei ; globalne włączenie przerwań
+
+; portD jako wyjście
+ldi r16, 0b11111111
+out DDRD, r16
+ldi r16, 0b00000000
+out PORTD, r16
+
+clr r19
+
+main: ; pusta pętla
+	rjmp main
+
+
+
+TIM1_COMPA: ; przerwanie przy porównaniu licznika
+	
+	inc r19	; inkrementacja rejestru i wyprowadzenie na diody
+	out PORTD, r19
+	
+	reti

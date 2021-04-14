@@ -1,0 +1,141 @@
+; przerwanie na INT1 i PCINT0
+
+.include "m328pdef.inc"
+.org 0x0000 rjmp reset
+.org 0x0004 rjmp int_int1
+.org 0x0008 rjmp int_pcint1
+
+reset:
+
+; inicjalizacja stosu
+ldi r16, high(RAMEND)
+out sph, r16
+ldi r16, low(RAMEND)
+out spl, r16
+
+; do realizacji potrzebuje PD3 (INT0) oraz jakikolwiek pin PCINT (wykorzystam PB4 [PCINT4])
+; PORTC wykorzystam by wyświetlać sygnały na diodach
+
+ldi r16, 0b00000000
+out DDRD, r16		; PORTD jako wyjście
+out DDRB, r16		; PORTB jako wyjście
+
+ldi r16, 0b11111111
+out PORTD, r16		; pull-up na PORTD
+out PORTB, r16		; pull-up na PORTB
+out DDRC, r16		; PORTC jako wyjście
+
+ldi r16, 0b00000000
+sts EICRA, r16		; przerwanie będzie wywoływane niskim stanem INT1
+
+sbi EIMSK, 1		; włączenie przerwań dla INT1
+
+; zakładam że wykorzystam PB4 jako drugi pin do przerwań, przypisany mu numer przerwania to PCINT4, należy do grupy PCIE0
+
+ldi r16, 0b00000001
+sts PCICR, r16		; włączenie przerwań dla PCIE1 (PCINT14-PCINT8)
+
+ldi r16, 0b00010000
+sts PCMSK0, r16		; właczenie przerwania konkretnie dla PCINT14
+
+sei ; globalne włączenie przerwań
+
+
+petla: ; miganie 2 diodami co 200ms
+	
+	ldi r16, 0b00001010
+	out PORTC, r16
+	rcall czekaj0s2
+	
+	ldi r16, 0b00000101
+	out PORTC, r16
+	rcall czekaj0s2
+	
+	rjmp petla
+
+int_int1: ; szybkie miganie wszystkimi diodami na raz
+	ldi r16, 0b00001111
+	out PORTC, r16
+	rcall czekaj0s2	
+
+	ldi r16, 0b00000000
+	out PORTC, r16
+	rcall czekaj0s1
+
+	ldi r16, 0b00001111
+	out PORTC, r16
+	rcall czekaj50ms
+
+	ldi r16, 0b00000000
+	out PORTC, r16
+	rcall czekaj50ms
+
+	ldi r16, 0b00001111
+	out PORTC, r16
+	rcall czekaj0s1	
+
+	ldi r16, 0b00000000
+	out PORTC, r16
+	rcall czekaj0s2	
+
+	reti
+
+int_pcint1: ; "jeżdżąca" dioda
+	ldi r16, 30
+	ldi r17, 0b00000001
+	temp:
+		rol r17
+		out PORTC, r17
+		rcall czekaj50ms
+		dec r16
+		brne temp
+	reti
+
+
+; pętla na 200ms
+czekaj0s2:
+	ldi r29, 241
+	c0s2_1:
+	    ldi r30, 25
+	    c0s2_2:
+	        ldi r31, 176
+	        c0s2_3:
+		        dec r31
+		        brne c0s2_3
+	    	dec r30
+	   		brne c0s2_2
+		dec r29
+		brne c0s2_1
+	ret
+
+; pętla na 100ms
+czekaj0s1:
+	ldi r29, 241
+	c0s1_1:
+	    ldi r30, 14
+	    c0s1_2:
+	        ldi r31, 157
+	        c0s1_3:
+		        dec r31
+		        brne c0s1_3
+	    	dec r30
+	   		brne c0s1_2
+		dec r29
+		brne c0s1_1
+	ret
+
+; pętla na 50ms
+czekaj50ms:
+	ldi r29, 95
+	c50ms_1:
+	    ldi r30, 23
+	    c50ms_2:
+	        ldi r31, 121
+	        c50ms_3:
+		        dec r31
+		        brne c50ms_3
+	    	dec r30
+	   		brne c50ms_2
+		dec r29
+		brne c50ms_1
+	ret

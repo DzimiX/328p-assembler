@@ -1,0 +1,40 @@
+; buzzer 1 kHz
+
+.include "m328pdef.inc"
+
+.def jed = r16
+.def zer = r17
+
+ldi r16, low(RAMEND)	; inicjalizacja stosu
+out spl, r16
+ldi r16, high(RAMEND)
+out sph, r16
+
+ldi jed, 0b11111111		; wpisanie wartoœci do rejestrów
+ldi zer, 0b00000000
+
+out DDRB, r16			; ustawienie ca³ego portuB na wyjœcie
+
+start:
+	out PORTB, jed		; wypisanie na wszystkich portach PortuB "1" (m.in. na buzzerze)
+	call czekaj0ms5		; odczekanie 0.5ms
+	out PORTB, zer		; wypisanie na wszystkich portach PortuB "0" (m.in. na buzzerze)
+	call czekaj0ms5		; odczekanie 0.5ms
+rjmp start
+
+czekaj0ms5:		; pêtla na dok³adnie 8000 cykli, czyli 0.5 ms (taktowanie 16 MHz)
+	ldi r18, 1
+	c0ms5_0:
+		ldi r19, 13
+		c0ms5_1:
+			ldi r20, 204
+			c0ms5_2:
+				dec r20
+				brne c0ms5_2
+			dec r19
+			brne c0ms5_1
+		dec r18
+		brne c0ms5_0
+	nop
+	nop
+	ret
